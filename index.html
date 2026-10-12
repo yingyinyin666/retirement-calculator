@@ -6,7 +6,7 @@
   <meta name="description" content="填写家庭资产、储蓄、分阶段退休支出和通胀假设，测算完全退休的资金缺口。数据只在当前浏览器页面计算。">
   <meta name="robots" content="index,follow">
   <link rel="canonical" href="https://yingyinyin666.github.io/retirement-calculator/">
-  <title>FIRE 计算器</title>
+  <title>牛马赎身计算器</title>
   <style>
     :root {
       color-scheme: light dark;
@@ -48,6 +48,10 @@
     .expense-table tbody th, .expense-table tfoot th { font-size: 13px; font-weight: 600; }
     .expense-table input { padding: 8px; }
     .expense-table output { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .pension-module { margin-top: 26px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--soft); }
+    .pension-module h3 { margin: 0 0 6px; }
+    .pension-module .hint { margin: 0 0 16px; }
+    .extra-income { margin-top: 18px; }
     details { margin-top: 24px; border-top: 1px solid var(--line); padding-top: 18px; }
     summary { color: var(--accent); font-weight: 600; cursor: pointer; }
     details .fields { margin-top: 18px; }
@@ -104,16 +108,16 @@
       <a class="back" href="https://yingyinyin666.github.io/HowToLiveBetter/">返回指南首页</a>
     </header>
     <main>
-      <h1>FIRE 计算器</h1>
-      <p class="intro">填写两人合计的资产、储蓄和退休支出。支出按今天的购买力填写，结果会随输入立即更新。退休后劳动收入按零计算。</p>
+      <h1>牛马赎身计算器</h1>
+      <p class="intro">填写两人合计的资产、储蓄和退休支出。支出按今天的购买力填写，结果会随输入立即更新。养老金和退休后额外收入可选填。</p>
       <div class="layout">
         <section class="panel" aria-labelledby="inputs-title">
           <h2 id="inputs-title">填写你的情况</h2>
           <div class="fields">
             <label><span>目前可用资产 · 万元</span><input name="assets" type="number" inputmode="decimal" min="0" step="any" placeholder="填可支取的金融资产"></label>
             <label><span>现在每年可存 · 万元</span><input name="saving" type="number" inputmode="decimal" min="0" step="any" placeholder="填税后实际存下的金额"></label>
-            <label><span>当前年龄 · 岁</span><input name="currentAge" type="number" inputmode="numeric" min="0" max="90" step="1" placeholder="例如 29"></label>
-            <label><span>希望完全退休 · 岁</span><input name="retirementAge" type="number" inputmode="numeric" min="0" max="90" step="1" placeholder="例如 35"></label>
+            <label><span>男方当前年龄 · 岁</span><input name="currentAge" type="number" inputmode="numeric" min="0" max="90" step="1" placeholder="例如 29"></label>
+            <label><span>希望两人完全退休时男方年龄 · 岁</span><input name="retirementAge" type="number" inputmode="numeric" min="0" max="90" step="1" placeholder="例如 35"></label>
           </div>
           <h3>退休后每年支出</h3>
           <div class="fields">
@@ -133,13 +137,28 @@
             <tfoot><tr><th scope="row">每年合计</th><td><output id="early-total">—</output></td><td><output id="later-total">—</output></td></tr></tfoot>
           </table>
           <p class="hint">住房、医保、旅行和更换家电等费用都要计入。不能提前取出的养老金暂不放进可用资产。</p>
+          <section class="pension-module" aria-labelledby="pension-title">
+            <h3 id="pension-title">养老金（选填）</h3>
+            <p class="hint">男、女方分别填写预计每年税后到账金额和各自起领年龄。女方当前年龄用于对齐同一年；未填的养老金按 0 计算。</p>
+            <div class="fields">
+              <label><span>男方每年养老金 · 万元</span><input name="malePensionAnnual" type="number" inputmode="decimal" min="0" step="any" placeholder="选填"></label>
+              <label><span>男方开始领取 · 岁</span><input name="malePensionStartAge" type="number" inputmode="numeric" min="0" max="90" step="1" placeholder="例如 60"></label>
+              <label><span>女方当前年龄 · 岁</span><input name="femaleCurrentAge" type="number" inputmode="numeric" min="0" max="90" step="1" placeholder="填女方现在的年龄"></label>
+              <label><span>女方每年养老金 · 万元</span><input name="femalePensionAnnual" type="number" inputmode="decimal" min="0" step="any" placeholder="选填"></label>
+              <label><span>女方开始领取 · 岁</span><input name="femalePensionStartAge" type="number" inputmode="numeric" min="0" max="90" step="1" placeholder="按女方年龄"></label>
+            </div>
+            <p class="hint">填写哪一方的养老金，就要填写该方的起领年龄；填女方养老金时还要填女方当前年龄。两人按同一日历年份计算，金额按固定数额延续。</p>
+          </section>
+          <div class="fields extra-income">
+            <label><span>退休后额外收入 · 万元/年</span><input name="extraIncome" type="number" inputmode="decimal" min="0" step="any" placeholder="选填，税后固定金额"></label>
+          </div>
+          <p class="hint">如租金等，从退休当年起每年计入，默认金额固定且持续到账。不要把养老金重复填在这里。</p>
           <details>
             <summary>收益、通胀与规划年限</summary>
             <div class="fields">
               <label><span>退休前税费后年收益 · %</span><input name="preReturn" type="number" inputmode="decimal" min="-50" max="25" step="any" value="3"></label>
               <label><span>退休后税费后年收益 · %</span><input name="postReturn" type="number" inputmode="decimal" min="-50" max="25" step="any" value="3"></label>
               <label><span>年通胀 · %</span><input name="inflation" type="number" inputmode="decimal" min="-5" max="20" step="any" value="2"></label>
-              <label><span>每年储蓄增长 · %</span><input name="savingGrowth" type="number" inputmode="decimal" min="-20" max="30" step="any" value="0"></label>
               <label><span>规划至 · 岁</span><input name="endAge" type="number" inputmode="numeric" min="0" max="90" step="1" value="90"></label>
               <label><span>退休时另留备用金 · 万元</span><input name="reserve" type="number" inputmode="decimal" min="0" step="any" value="0"></label>
             </div>
@@ -151,11 +170,12 @@
           <div class="outcome" id="outcome" hidden><strong id="outcome-title"></strong><p id="outcome-detail"></p></div>
           <div class="metrics">
             <div class="metric"><div class="name">退休时预计资产</div><output id="projected">—</output></div>
-            <div class="metric"><div class="name">覆盖规划支出所需资产</div><output id="needed">—</output></div>
+            <div class="metric"><div class="name">扣除退休收入后所需资产</div><output id="needed">—</output></div>
             <div class="metric"><div class="name" id="gap-label">资金缺口</div><output id="gap">—</output></div>
             <div class="metric"><div class="name">现在起每年需存</div><output id="required" class="smaller">—</output></div>
             <div class="metric"><div class="name">当前路径可覆盖退休后</div><output id="covered" class="smaller">—</output></div>
             <div class="metric"><div class="name">退休首年预计支出</div><output id="first-spend" class="smaller">—</output></div>
+            <div class="metric"><div class="name">退休首年预计收入</div><output id="first-income" class="smaller">—</output></div>
           </div>
           <div class="progress" role="progressbar" aria-label="预计资产占所需资产的比例" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>
           <p class="status" id="status">计算在你的设备上进行，输入不会上传，也不会保存在网站上。</p>
@@ -163,20 +183,20 @@
         </section>
       </div>
       <div class="notes">
-        <p>计算已经考虑复利：现有资产每年增长；每年的新储蓄在年末存入，从下一年开始增长。退休后每年先支付当年支出，剩余资产再按填写的收益率增长。</p>
+        <p>计算已经考虑复利：现有资产每年增长；退休前每年按固定金额储蓄，年末存入。退休后每年年初收到养老金和额外收入、支付支出，剩余资产再按填写的收益率增长。</p>
         <p>这是按固定收益和固定通胀计算的情景，不是成功概率或收益保证。实际市场每年会波动，退休初期亏损可能让资金更早不足。</p>
         <details>
           <summary>计算口径</summary>
-          <p>储蓄在退休前每年年末存入。退休支出在每年年初支付，并按通胀逐年上调。所需资产是各年支出按你填写的退休后收益率折算到退休时的金额，加上另留的备用金。</p>
-          <p>本页没有计入未来法定养老金、个人养老金领取、税制变化和突发医疗支出。若要计入这些项目，请先调整支出或资产，再看结果。逐年表最多列到 90 岁；90 岁后仍需生活时，要单独估算那段支出。</p>
+          <p>储蓄在退休前每年年末存入。退休支出在每年年初支付，并按通胀逐年上调。男方与女方养老金分别从各自填写的年龄开始计入，额外收入从两人完全退休当年开始计入；这些收入按税后固定名义金额、不随通胀增长。所需资产按每年收支折算，确保规划期内不会先用尽，再加另留的备用金。</p>
+          <p>本页没有自动估算养老金待遇，也没有计入税制变化和突发医疗支出。养老金若一次性领取，请不要同时填进可用资产和年度养老金。逐年表最多列到 90 岁；90 岁后仍需生活时，要单独估算那段支出。</p>
         </details>
       </div>
       <section class="panel annual-section" aria-labelledby="annual-title">
         <h2 id="annual-title">逐年收支与余额</h2>
-        <p class="annual-caption">金额单位：万元；年龄按年初计算，最多列到 90 岁。“储蓄＋收益”合并当年新增储蓄和投资收益。退休前新增储蓄已扣除在职生活费，退休后没有劳动收入；退休首年可用余额已扣除备用金。首次年末余额低于年初余额的年份标红。</p>
+        <p class="annual-caption">金额单位：万元；年龄按年初计算，最多列到 90 岁。“收入＋收益”在退休前是新增储蓄和投资收益，退休后是养老金、额外收入和投资收益。退休前储蓄已扣除在职生活费；退休首年可用余额已扣除备用金。首次年末余额低于年初余额的年份标红。</p>
         <div class="annual-wrap">
           <table class="annual-table">
-            <thead><tr><th scope="col">年龄</th><th scope="col">储蓄＋收益</th><th scope="col">支出</th><th scope="col">年末余额</th></tr></thead>
+            <thead><tr><th scope="col">年龄</th><th scope="col">收入＋收益</th><th scope="col">支出</th><th scope="col">年末余额</th></tr></thead>
             <tbody id="annual-body"><tr><td colspan="4">填写左侧数据后显示逐年结果。</td></tr></tbody>
           </table>
         </div>
@@ -185,7 +205,8 @@
   </div>
   <script>
   (() => {
-    const names = ['assets','saving','currentAge','retirementAge','earlyYears','preReturn','postReturn','inflation','savingGrowth','endAge','reserve'];
+    const names = ['assets','saving','currentAge','retirementAge','earlyYears','malePensionAnnual','malePensionStartAge','femaleCurrentAge','femalePensionAnnual','femalePensionStartAge','preReturn','postReturn','inflation','extraIncome','endAge','reserve'];
+    const optionalNames = ['malePensionAnnual','malePensionStartAge','femaleCurrentAge','femalePensionAnnual','femalePensionStartAge','extraIncome'];
     const inputs = Object.fromEntries(names.map(name => [name, document.querySelector('[name="' + name + '"]')]));
     const spendingInputs = {
       early: [...document.querySelectorAll('[data-phase="early"]')],
@@ -194,6 +215,9 @@
     const byId = id => document.getElementById(id);
     const formatNumber = value => new Intl.NumberFormat('zh-CN', {maximumFractionDigits: 1, minimumFractionDigits: 1}).format(Math.abs(value) < 1e-8 ? 0 : value);
     const format = value => formatNumber(value) + ' 万元';
+    const retirementIncome = (p, yearsFromNow) => p.extraIncome
+      + (p.malePensionAnnual > 0 && p.currentAge + yearsFromNow >= p.malePensionStartAge ? p.malePensionAnnual : 0)
+      + (p.femalePensionAnnual > 0 && p.femaleCurrentAge + yearsFromNow >= p.femalePensionStartAge ? p.femalePensionAnnual : 0);
     function emptyTable() {
       const row = document.createElement('tr');
       const cell = document.createElement('td');
@@ -202,7 +226,7 @@
       row.append(cell);
       byId('annual-body').replaceChildren(row);
     }
-    function annualRow(age, stage, saving, investment, spending, unpaid, balance, declineStart) {
+    function annualRow(age, stage, income, investment, spending, unpaid, balance, declineStart) {
       const row = document.createElement('tr');
       if (declineStart) row.className = 'decline-start';
       const ageCell = document.createElement('td');
@@ -211,7 +235,7 @@
       stageNote.textContent = stage;
       ageCell.append(stageNote);
       const flowCell = document.createElement('td');
-      flowCell.textContent = formatNumber(saving + investment);
+      flowCell.textContent = formatNumber(income + investment);
       const spendingCell = document.createElement('td');
       spendingCell.textContent = formatNumber(spending);
       if (unpaid > 0) {
@@ -231,7 +255,7 @@
       row.append(ageCell, flowCell, spendingCell, balanceCell);
       return row;
     }
-    function fillTable(p, pre, post, inflation, savingGrowth) {
+    function fillTable(p, pre, post, inflation) {
       const rows = document.createDocumentFragment();
       let balance = p.assets;
       let declineMarked = false;
@@ -240,7 +264,7 @@
       for (let year = 0; year < p.wait; year++) {
         const opening = balance;
         const investment = opening * pre;
-        const saving = p.saving * Math.pow(1 + savingGrowth, year);
+        const saving = p.saving;
         balance = opening + investment + saving;
         const declineStart = !declineMarked && balance < opening - 1e-8;
         if (declineStart) { declineMarked = true; firstDeclineAge = p.currentAge + year; }
@@ -250,20 +274,21 @@
       for (let year = 0; year < p.horizon; year++) {
         if (year === p.earlyYears) balanceAtLaterStart = balance;
         const opening = balance;
+        const income = retirementIncome(p, p.wait + year);
         const spending = (year < p.earlyYears ? p.earlySpend : p.laterSpend) * Math.pow(1 + inflation, p.wait + year);
-        const unpaid = Math.max(0, spending - opening);
-        const afterSpending = Math.max(0, opening - spending);
+        const unpaid = Math.max(0, spending - opening - income);
+        const afterSpending = Math.max(0, opening + income - spending);
         const investment = afterSpending * post;
         balance = afterSpending + investment;
         const declineStart = !declineMarked && balance < opening - 1e-8;
         if (declineStart) { declineMarked = true; firstDeclineAge = p.retirementAge + year; }
-        rows.append(annualRow(p.retirementAge + year, '退休第 ' + (year + 1) + ' 年', 0, investment, spending, unpaid, balance, declineStart));
+        rows.append(annualRow(p.retirementAge + year, '退休第 ' + (year + 1) + ' 年', income, investment, spending, unpaid, balance, declineStart));
       }
       byId('annual-body').replaceChildren(rows);
       return {firstDeclineAge, balanceAtLaterStart, endingBalance: balance};
     }
     function clear(message, isError) {
-      for (const id of ['projected','needed','gap','required','covered','first-spend']) byId(id).textContent = '—';
+      for (const id of ['projected','needed','gap','required','covered','first-spend','first-income']) byId(id).textContent = '—';
       byId('result-summary').textContent = message;
       byId('outcome').hidden = true;
       byId('outcome').classList.remove('short');
@@ -288,29 +313,35 @@
         clear('填完左侧金额后，这里显示结果。', false);
         return;
       }
-      const p = Object.fromEntries(names.map(name => [name, inputs[name].value === '' ? NaN : Number(inputs[name].value)]));
+      const p = Object.fromEntries(names.map(name => [name, inputs[name].value === '' ? (optionalNames.includes(name) ? 0 : NaN) : Number(inputs[name].value)]));
       p.wait = p.retirementAge - p.currentAge;
       p.horizon = p.endAge - p.retirementAge + 1;
       p.earlySpend = spending.early;
       p.laterSpend = spending.later;
-      if (names.some(name => !Number.isFinite(p[name]) || !inputs[name].checkValidity()) || Object.values(spendingInputs).flat().some(field => field.value !== '' && !field.checkValidity()) || p.wait < 0 || p.horizon < 1 || p.earlyYears > p.horizon) {
-        clear('请填写有效数值。退休年龄不能小于当前年龄，规划终点不能早于退休年龄，前期年数不能超过退休后规划年数。', true);
+      if (names.some(name => !Number.isFinite(p[name]) || (inputs[name].value !== '' && !inputs[name].checkValidity())) || Object.values(spendingInputs).flat().some(field => field.value !== '' && !field.checkValidity()) || p.wait < 0 || p.horizon < 1 || p.earlyYears > p.horizon ||
+          (p.malePensionAnnual > 0 && inputs.malePensionStartAge.value === '') ||
+          (p.femalePensionAnnual > 0 && (inputs.femaleCurrentAge.value === '' || inputs.femalePensionStartAge.value === ''))) {
+        clear('请填写有效数值。填写养老金金额时，需要补齐对应的起领年龄；女方养老金还需填写女方当前年龄。男方目标退休年龄不能小于当前年龄，规划终点不能早于目标退休年龄。', true);
         return;
       }
       byId('error').hidden = true;
       const pre = p.preReturn / 100;
       const post = p.postReturn / 100;
       const inflation = p.inflation / 100;
-      const savingGrowth = p.savingGrowth / 100;
       const accumulatedAssets = p.assets * Math.pow(1 + pre, p.wait);
       let savingFactor = 0;
-      for (let year = 0; year < p.wait; year++) savingFactor += Math.pow(1 + savingGrowth, year) * Math.pow(1 + pre, p.wait - year - 1);
+      for (let year = 0; year < p.wait; year++) savingFactor += Math.pow(1 + pre, p.wait - year - 1);
       const projected = accumulatedAssets + p.saving * savingFactor;
-      let needed = p.reserve;
+      let discountedNetSpending = 0;
+      let neededLiving = 0;
       for (let year = 0; year < p.horizon; year++) {
         const spending = year < p.earlyYears ? p.earlySpend : p.laterSpend;
-        needed += spending * Math.pow(1 + inflation, p.wait + year) / Math.pow(1 + post, year);
+        const expense = spending * Math.pow(1 + inflation, p.wait + year);
+        const income = retirementIncome(p, p.wait + year);
+        discountedNetSpending += (expense - income) / Math.pow(1 + post, year);
+        neededLiving = Math.max(neededLiving, discountedNetSpending);
       }
+      const needed = p.reserve + neededLiving;
       const difference = needed - projected;
       const requiredSaving = savingFactor > 0 ? Math.max(0, (needed - accumulatedAssets) / savingFactor) : null;
       let balance = Math.max(0, projected - p.reserve);
@@ -318,8 +349,9 @@
       for (let year = 0; year < p.horizon; year++) {
         const spending = year < p.earlyYears ? p.earlySpend : p.laterSpend;
         const expense = spending * Math.pow(1 + inflation, p.wait + year);
-        if (expense > balance + 1e-8) { covered = year; break; }
-        balance = (balance - expense) * (1 + post);
+        const income = retirementIncome(p, p.wait + year);
+        if (expense > balance + income + 1e-8) { covered = year; break; }
+        balance = (balance + income - expense) * (1 + post);
       }
       byId('projected').textContent = format(projected);
       byId('needed').textContent = format(needed);
@@ -328,18 +360,25 @@
       byId('required').textContent = requiredSaving === null ? '已到退休时点' : format(requiredSaving) + '/年';
       byId('covered').textContent = covered === p.horizon ? '至少 ' + p.horizon + ' 年' : covered === 0 ? '不足 1 年' : '约 ' + covered + ' 年';
       byId('first-spend').textContent = format((p.earlyYears > 0 ? p.earlySpend : p.laterSpend) * Math.pow(1 + inflation, p.wait));
+      byId('first-income').textContent = format(retirementIncome(p, p.wait));
       byId('result-summary').textContent = difference > 0 ? '在这组假设下，计划退休时的资产还不够。' : '在这组假设下，资产可以覆盖规划期支出。';
       byId('status').textContent = covered < p.horizon ? '按当前储蓄路径，退休后第 ' + (covered + 1) + ' 年会出现资金不足。' : '按当前储蓄路径，模型覆盖了填写的退休年限。';
       byId('status').classList.toggle('short', covered < p.horizon);
       const progress = needed <= 0 ? 100 : Math.min(100, Math.max(0, projected / needed * 100));
       document.querySelector('.progress span').style.width = progress + '%';
       document.querySelector('.progress').setAttribute('aria-valuenow', String(Math.round(progress)));
-      const trajectory = fillTable(p, pre, post, inflation, savingGrowth);
+      const trajectory = fillTable(p, pre, post, inflation);
       const declineText = trajectory.firstDeclineAge === null ? '' : trajectory.firstDeclineAge < p.retirementAge
         ? '从现在起第 ' + (trajectory.firstDeclineAge - p.currentAge + 1) + ' 年（' + trajectory.firstDeclineAge + ' 岁）资产首次下降。'
         : '退休第 ' + (trajectory.firstDeclineAge - p.retirementAge + 1) + ' 年（' + trajectory.firstDeclineAge + ' 岁）资产首次下降。';
       const laterExpense = p.laterSpend * Math.pow(1 + inflation, p.wait + p.earlyYears);
-      const perpetualThreshold = post > inflation ? laterExpense * (1 + post) / (post - inflation) : Infinity;
+      const laterYear = p.wait + p.earlyYears;
+      const steadyIncome = p.extraIncome
+        + (p.malePensionAnnual > 0 && p.currentAge + laterYear >= p.malePensionStartAge ? p.malePensionAnnual : 0)
+        + (p.femalePensionAnnual > 0 && p.femaleCurrentAge + laterYear >= p.femalePensionStartAge ? p.femalePensionAnnual : 0);
+      const perpetualThreshold = post > 0 && inflation >= 0 && post > inflation
+        ? Math.max(0, laterExpense * (1 + post) / (post - inflation) - steadyIncome * (1 + post) / post)
+        : Infinity;
       const perpetual = covered === p.horizon && p.earlyYears < p.horizon && p.laterSpend > 0 &&
         trajectory.balanceAtLaterStart + 1e-8 >= perpetualThreshold;
       const outcome = byId('outcome');
@@ -350,7 +389,7 @@
         byId('outcome-detail').textContent = declineText + '退休第 ' + (covered + 1) + ' 年无法覆盖当年计划支出。';
       } else if (perpetual) {
         byId('outcome-title').textContent = '模型内永远花不完';
-        byId('outcome-detail').textContent = declineText + '按固定收益率、通胀和后期支出延续计算，资产可持续覆盖支出。实际收益和支出会变化，这不是保证。';
+        byId('outcome-detail').textContent = declineText + '按固定收益率、通胀、后期支出和持续到账的收入延续计算，资产可持续覆盖支出。实际收益和收入会变化，这不是保证。';
       } else if (trajectory.firstDeclineAge !== null) {
         byId('outcome-title').textContent = trajectory.firstDeclineAge + ' 岁资产开始下降';
         byId('outcome-detail').textContent = declineText + '到 ' + p.endAge + ' 岁仍可覆盖计划支出，年末余额约 ' + format(trajectory.endingBalance) + '。';
