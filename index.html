@@ -184,7 +184,7 @@
           <p class="status" id="status">计算在你的设备上进行，输入不会上传，也不会保存在网站上。</p>
           <p class="error" id="error" role="alert" hidden></p>
           <button class="download-button" id="download-image" type="button" disabled>下载测算结果图片</button>
-          <p class="download-hint">图片包含测算结果、填写的假设和逐年收支。</p>
+          <p class="download-hint">保存整张页面；折叠的计算说明会在图片中展开。</p>
           <p class="error" id="download-error" role="alert" hidden></p>
         </section>
       </div>
@@ -209,6 +209,7 @@
       </section>
     </main>
   </div>
+  <script src="./html2canvas-1.4.1.min.js"></script>
   <script>
   (() => {
     const names = ['assets','saving','currentAge','retirementAge','earlyYears','pensionAnnual','pensionStartAge','preReturn','postReturn','inflation','extraIncome','extraIncomeEndAge','endAge','reserve'];
@@ -221,7 +222,7 @@
     const byId = id => document.getElementById(id);
     const formatNumber = value => new Intl.NumberFormat('zh-CN', {maximumFractionDigits: 1, minimumFractionDigits: 1}).format(Math.abs(value) < 1e-8 ? 0 : value);
     const format = value => formatNumber(value) + ' 万元';
-    let currentReport = null;
+    let hasResult = false;
     const retirementIncome = (p, yearsFromNow) => (p.currentAge + yearsFromNow <= p.extraIncomeEndAge ? p.extraIncome : 0)
       + (p.pensionAnnual > 0 && p.currentAge + yearsFromNow >= p.pensionStartAge ? p.pensionAnnual : 0);
     function emptyTable() {
@@ -263,7 +264,6 @@
     }
     function fillTable(p, pre, post, inflation) {
       const rows = document.createDocumentFragment();
-      const annualRows = [];
       let balance = p.assets;
       let declineMarked = false;
       let firstDeclineAge = null;
@@ -276,7 +276,6 @@
         const declineStart = !declineMarked && balance < opening - 1e-8;
         if (declineStart) { declineMarked = true; firstDeclineAge = p.currentAge + year; }
         rows.append(annualRow(p.currentAge + year, '退休前', saving, investment, 0, 0, balance, declineStart));
-        annualRows.push({age: p.currentAge + year, income: saving + investment, spending: 0, unpaid: 0, balance, declineStart});
       }
       balance = Math.max(0, balance - p.reserve);
       for (let year = 0; year < p.horizon; year++) {
@@ -291,13 +290,12 @@
         const declineStart = !declineMarked && balance < opening - 1e-8;
         if (declineStart) { declineMarked = true; firstDeclineAge = p.retirementAge + year; }
         rows.append(annualRow(p.retirementAge + year, '退休第 ' + (year + 1) + ' 年', income, investment, spending, unpaid, balance, declineStart));
-        annualRows.push({age: p.retirementAge + year, income: income + investment, spending, unpaid, balance, declineStart});
       }
       byId('annual-body').replaceChildren(rows);
-      return {firstDeclineAge, balanceAtLaterStart, endingBalance: balance, annualRows};
+      return {firstDeclineAge, balanceAtLaterStart, endingBalance: balance};
     }
     function clear(message, isError) {
-      currentReport = null;
+      hasResult = false;
       byId('download-image').disabled = true;
       byId('download-error').hidden = true;
       for (const id of ['projected','needed','gap','required','covered','first-spend','first-income']) byId(id).textContent = '—';
@@ -413,160 +411,43 @@
         byId('outcome-title').textContent = '到 ' + p.endAge + ' 岁资产尚未下降';
         byId('outcome-detail').textContent = '规划期内每年年末余额都不低于年初余额；这还不能证明更远的年龄也能覆盖支出。';
       }
-      currentReport = {
-        p,
-        metrics: [
-          ['退休时预计资产', byId('projected').textContent],
-          ['扣除退休收入后所需资产', byId('needed').textContent],
-          [byId('gap-label').textContent, byId('gap').textContent],
-          ['达到目标每年至少需存', byId('required').textContent],
-          ['当前路径可覆盖退休后', byId('covered').textContent],
-          ['退休首年预计支出', byId('first-spend').textContent],
-          ['退休首年预计收入', byId('first-income').textContent]
-        ],
-        outcomeTitle: byId('outcome-title').textContent,
-        outcomeDetail: byId('outcome-detail').textContent,
-        summary: byId('result-summary').textContent,
-        annualRows: trajectory.annualRows,
-        spendingDetails: [...document.querySelectorAll('.expense-table tbody tr')].map(row => ({
-          name: row.querySelector('th').textContent,
-          early: Number(row.querySelector('[data-phase="early"]').value || 0),
-          later: Number(row.querySelector('[data-phase="later"]').value || 0)
-        }))
-      };
+      hasResult = true;
       byId('download-image').disabled = false;
       byId('download-error').hidden = true;
     }
-    function makeReportImage(report) {
-      const {p, metrics, annualRows, spendingDetails} = report;
-      const width = 920;
-      const height = 1300 + spendingDetails.length * 28 + annualRows.length * 29;
-      const scale = Math.min(2, 4096 / height, Math.sqrt(12000000 / (width * height)));
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(width * scale);
-      canvas.height = Math.round(height * scale);
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('当前浏览器无法生成图片。');
-      ctx.scale(scale, scale);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, width, height);
-      ctx.textBaseline = 'alphabetic';
-      const font = 'system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
-      const text = (value, x, y, size = 16, color = '#18212f', weight = 400) => {
-        ctx.fillStyle = color;
-        ctx.font = weight + ' ' + size + 'px ' + font;
-        ctx.fillText(String(value), x, y);
-      };
-      const rule = y => {
-        ctx.fillStyle = '#dce2ea';
-        ctx.fillRect(46, y, width - 92, 1);
-      };
-      const wrapped = (value, x, y, maxWidth, size = 16, color = '#536071', lineHeight = 24) => {
-        ctx.font = '400 ' + size + 'px ' + font;
-        let line = '';
-        for (const char of String(value)) {
-          if (ctx.measureText(line + char).width > maxWidth && line) {
-            text(line, x, y, size, color);
-            y += lineHeight;
-            line = char;
-          } else line += char;
-        }
-        if (line) { text(line, x, y, size, color); y += lineHeight; }
-        return y;
-      };
-      let y = 65;
-      text('牛马赎身计算器', 46, y, 32, '#18212f', 700);
-      y += 38;
-      text('当前 ' + p.currentAge + ' 岁 · 希望 ' + p.retirementAge + ' 岁退休 · 规划到 ' + p.endAge + ' 岁', 46, y, 17, '#536071');
-      y += 26;
-      rule(y);
-      y += 38;
-      text('测算结果', 46, y, 22, '#18212f', 700);
-      y += 39;
-      ctx.fillStyle = '#eaf0fd';
-      ctx.fillRect(46, y - 27, width - 92, 116);
-      text(report.outcomeTitle, 64, y + 2, 22, '#18212f', 700);
-      wrapped(report.outcomeDetail, 64, y + 32, width - 128, 14, '#536071', 21);
-      y += 128;
-      text(report.summary, 46, y, 15, '#536071');
-      y += 38;
-      for (let i = 0; i < metrics.length; i++) {
-        const column = i % 2;
-        const row = Math.floor(i / 2);
-        const x = 46 + column * 426;
-        const top = y + row * 77;
-        ctx.fillStyle = '#f6f7fb';
-        ctx.fillRect(x, top, 402, 67);
-        text(metrics[i][0], x + 14, top + 24, 13, '#536071');
-        text(metrics[i][1], x + 14, top + 51, 20, '#18212f', 700);
-      }
-      y += Math.ceil(metrics.length / 2) * 77 + 16;
-      rule(y);
-      y += 40;
-      text('填写的假设', 46, y, 21, '#18212f', 700);
-      y += 31;
-      y = wrapped('目前可用资产 ' + format(p.assets) + '；退休前每年可存 ' + format(p.saving) + '；退休时另留备用金 ' + format(p.reserve) + '。', 46, y, width - 92, 15);
-      y = wrapped('退休前/后年收益 ' + formatNumber(p.preReturn) + '% / ' + formatNumber(p.postReturn) + '%；年通胀 ' + formatNumber(p.inflation) + '%；前期持续 ' + p.earlyYears + ' 年。', 46, y, width - 92, 15);
-      y = wrapped('养老金 ' + format(p.pensionAnnual) + (p.pensionAnnual > 0 ? '（' + p.pensionStartAge + ' 岁起）' : '') + '；退休后额外收入 ' + format(p.extraIncome) + '/年' + (p.extraIncome > 0 ? (p.extraIncomeContinues ? '（持续到账）' : '（至 ' + p.extraIncomeEndAge + ' 岁，含当年）') : '') + '。', 46, y, width - 92, 15);
-      y += 18;
-      text('退休后每年支出 · 按今天购买力填写，单位：万元', 46, y, 17, '#18212f', 700);
-      y += 28;
-      text('分项', 46, y, 13, '#536071', 600);
-      text('前期', 550, y, 13, '#536071', 600);
-      text('之后', 720, y, 13, '#536071', 600);
-      y += 14;
-      rule(y);
-      for (const item of spendingDetails) {
-        y += 28;
-        text(item.name, 46, y, 14);
-        text(formatNumber(item.early), 550, y, 14);
-        text(formatNumber(item.later), 720, y, 14);
-      }
-      y += 27;
-      text('合计', 46, y, 14, '#18212f', 700);
-      text(formatNumber(p.earlySpend), 550, y, 14, '#18212f', 700);
-      text(formatNumber(p.laterSpend), 720, y, 14, '#18212f', 700);
-      y += 23;
-      rule(y);
-      y += 41;
-      text('逐年收支与余额', 46, y, 21, '#18212f', 700);
-      y += 27;
-      text('金额单位：万元；红色行为资产首次下降的年份。', 46, y, 13, '#536071');
-      y += 34;
-      text('年龄', 46, y, 13, '#536071', 600);
-      text('收入＋收益', 280, y, 13, '#536071', 600);
-      text('支出', 530, y, 13, '#536071', 600);
-      text('年末余额', 710, y, 13, '#536071', 600);
-      y += 13;
-      rule(y);
-      for (const row of annualRows) {
-        y += 29;
-        const color = row.declineStart ? '#aa362f' : '#18212f';
-        if (row.declineStart) {
-          ctx.fillStyle = '#fff1ef';
-          ctx.fillRect(46, y - 22, width - 92, 28);
-        }
-        text(row.age + ' 岁' + (row.declineStart ? ' ↓' : ''), 46, y, 13, color);
-        text(formatNumber(row.income), 280, y, 13, color);
-        text(formatNumber(row.spending) + (row.unpaid > 0 ? '（缺 ' + formatNumber(row.unpaid) + '）' : ''), 530, y, 13, row.unpaid > 0 ? '#aa362f' : color);
-        text(formatNumber(row.balance), 710, y, 13, color, row.declineStart ? 700 : 400);
-        rule(y + 7);
-      }
-      y += 36;
-      y = wrapped('计算按固定收益率和通胀率推演，市场收益可能波动；结果只覆盖规划到 ' + p.endAge + ' 岁的年份。', 46, y, width - 92, 13, '#536071', 20);
-      text('图片由当前设备生成，输入未上传。', 46, y + 3, 13, '#536071');
-      if (y + 20 > height) throw new Error('图片内容超出画布，请缩短规划年限后重试。');
-      return canvas;
-    }
     byId('download-image').addEventListener('click', async () => {
-      if (!currentReport) return;
+      if (!hasResult) return;
       const button = byId('download-image');
       const error = byId('download-error');
+      const page = document.querySelector('.page');
+      const sections = [...page.querySelectorAll('details')];
+      const wasOpen = sections.map(section => section.open);
       button.disabled = true;
       button.textContent = '正在生成图片…';
       error.hidden = true;
       try {
-        const canvas = makeReportImage(currentReport);
+        if (typeof window.html2canvas !== 'function') throw new Error('图片组件未加载，请刷新页面重试。');
+        if (document.fonts && document.fonts.ready) await document.fonts.ready;
+        sections.forEach(section => { section.open = true; });
+        const width = Math.ceil(page.scrollWidth);
+        const height = Math.ceil(page.scrollHeight);
+        const scale = Math.min(2, window.devicePixelRatio || 1, 16384 / height, Math.sqrt(16000000 / (width * height)));
+        const canvas = await window.html2canvas(page, {
+          backgroundColor: getComputedStyle(document.body).backgroundColor,
+          scale,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: document.documentElement.clientWidth,
+          windowHeight: Math.max(window.innerHeight, height),
+          width,
+          height,
+          onclone(clone) {
+            clone.querySelectorAll('.page details').forEach(section => { section.open = true; });
+            const cloneButton = clone.getElementById('download-image');
+            cloneButton.disabled = false;
+            cloneButton.textContent = '下载测算结果图片';
+          }
+        });
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
         if (!blob) throw new Error('当前浏览器无法保存图片。');
         const url = URL.createObjectURL(blob);
@@ -583,7 +464,8 @@
         error.textContent = cause.message || '图片生成失败，请重试。';
         error.hidden = false;
       } finally {
-        button.disabled = !currentReport;
+        sections.forEach((section, index) => { section.open = wasOpen[index]; });
+        button.disabled = !hasResult;
         button.textContent = '下载测算结果图片';
       }
     });
