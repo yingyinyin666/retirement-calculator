@@ -1,4 +1,4 @@
-# 两人完全退休计算器
+# FIRE 计算器
 
 独立网页：[打开计算器](https://yingyinyin666.github.io/retirement-calculator/)
 

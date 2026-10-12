@@ -6,7 +6,7 @@
   <meta name="description" content="填写家庭资产、储蓄、分阶段退休支出和通胀假设，测算完全退休的资金缺口。数据只在当前浏览器页面计算。">
   <meta name="robots" content="index,follow">
   <link rel="canonical" href="https://yingyinyin666.github.io/retirement-calculator/">
-  <title>两人完全退休计算器</title>
+  <title>FIRE 计算器</title>
   <style>
     :root {
       color-scheme: light dark;
@@ -52,6 +52,12 @@
     summary { color: var(--accent); font-weight: 600; cursor: pointer; }
     details .fields { margin-top: 18px; }
     .summary { color: var(--muted); margin-bottom: 20px; }
+    .outcome { margin-bottom: 20px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--soft); }
+    .outcome[hidden] { display: none; }
+    .outcome strong { display: block; font-size: 17px; }
+    .outcome p { margin-top: 4px; color: var(--muted); font-size: 13px; }
+    .outcome.short { border-color: var(--bad); }
+    .outcome.short strong { color: var(--bad); }
     .metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
     .metric { min-width: 0; border-top: 1px solid var(--line); padding-top: 12px; }
     .metric .name { color: var(--muted); font-size: 13px; }
@@ -98,7 +104,7 @@
       <a class="back" href="https://yingyinyin666.github.io/HowToLiveBetter/">返回指南首页</a>
     </header>
     <main>
-      <h1>两人完全退休计算器</h1>
+      <h1>FIRE 计算器</h1>
       <p class="intro">填写两人合计的资产、储蓄和退休支出。支出按今天的购买力填写，结果会随输入立即更新。退休后劳动收入按零计算。</p>
       <div class="layout">
         <section class="panel" aria-labelledby="inputs-title">
@@ -142,6 +148,7 @@
         <section class="panel" aria-labelledby="results-title" aria-live="polite">
           <h2 id="results-title">测算结果</h2>
           <p class="summary" id="result-summary">填完左侧金额后，这里显示结果。</p>
+          <div class="outcome" id="outcome" hidden><strong id="outcome-title"></strong><p id="outcome-detail"></p></div>
           <div class="metrics">
             <div class="metric"><div class="name">退休时预计资产</div><output id="projected">—</output></div>
             <div class="metric"><div class="name">覆盖规划支出所需资产</div><output id="needed">—</output></div>
@@ -161,7 +168,7 @@
         <details>
           <summary>计算口径</summary>
           <p>储蓄在退休前每年年末存入。退休支出在每年年初支付，并按通胀逐年上调。所需资产是各年支出按你填写的退休后收益率折算到退休时的金额，加上另留的备用金。</p>
-          <p>本页没有计入未来法定养老金、个人养老金领取、税制变化和突发医疗支出。若要计入这些项目，请先调整支出或资产，再看结果。规划年限结束后仍需生活时，要把规划年限调长。</p>
+          <p>本页没有计入未来法定养老金、个人养老金领取、税制变化和突发医疗支出。若要计入这些项目，请先调整支出或资产，再看结果。逐年表最多列到 90 岁；90 岁后仍需生活时，要单独估算那段支出。</p>
         </details>
       </div>
       <section class="panel annual-section" aria-labelledby="annual-title">
@@ -228,17 +235,20 @@
       const rows = document.createDocumentFragment();
       let balance = p.assets;
       let declineMarked = false;
+      let firstDeclineAge = null;
+      let balanceAtLaterStart = null;
       for (let year = 0; year < p.wait; year++) {
         const opening = balance;
         const investment = opening * pre;
         const saving = p.saving * Math.pow(1 + savingGrowth, year);
         balance = opening + investment + saving;
         const declineStart = !declineMarked && balance < opening - 1e-8;
-        if (declineStart) declineMarked = true;
+        if (declineStart) { declineMarked = true; firstDeclineAge = p.currentAge + year; }
         rows.append(annualRow(p.currentAge + year, '退休前', saving, investment, 0, 0, balance, declineStart));
       }
       balance = Math.max(0, balance - p.reserve);
       for (let year = 0; year < p.horizon; year++) {
+        if (year === p.earlyYears) balanceAtLaterStart = balance;
         const opening = balance;
         const spending = (year < p.earlyYears ? p.earlySpend : p.laterSpend) * Math.pow(1 + inflation, p.wait + year);
         const unpaid = Math.max(0, spending - opening);
@@ -246,14 +256,17 @@
         const investment = afterSpending * post;
         balance = afterSpending + investment;
         const declineStart = !declineMarked && balance < opening - 1e-8;
-        if (declineStart) declineMarked = true;
+        if (declineStart) { declineMarked = true; firstDeclineAge = p.retirementAge + year; }
         rows.append(annualRow(p.retirementAge + year, '退休第 ' + (year + 1) + ' 年', 0, investment, spending, unpaid, balance, declineStart));
       }
       byId('annual-body').replaceChildren(rows);
+      return {firstDeclineAge, balanceAtLaterStart, endingBalance: balance};
     }
     function clear(message, isError) {
       for (const id of ['projected','needed','gap','required','covered','first-spend']) byId(id).textContent = '—';
       byId('result-summary').textContent = message;
+      byId('outcome').hidden = true;
+      byId('outcome').classList.remove('short');
       byId('error').hidden = !isError;
       byId('error').textContent = isError ? message : '';
       byId('status').classList.remove('short');
@@ -321,7 +334,30 @@
       const progress = needed <= 0 ? 100 : Math.min(100, Math.max(0, projected / needed * 100));
       document.querySelector('.progress span').style.width = progress + '%';
       document.querySelector('.progress').setAttribute('aria-valuenow', String(Math.round(progress)));
-      fillTable(p, pre, post, inflation, savingGrowth);
+      const trajectory = fillTable(p, pre, post, inflation, savingGrowth);
+      const declineText = trajectory.firstDeclineAge === null ? '' : trajectory.firstDeclineAge < p.retirementAge
+        ? '从现在起第 ' + (trajectory.firstDeclineAge - p.currentAge + 1) + ' 年（' + trajectory.firstDeclineAge + ' 岁）资产首次下降。'
+        : '退休第 ' + (trajectory.firstDeclineAge - p.retirementAge + 1) + ' 年（' + trajectory.firstDeclineAge + ' 岁）资产首次下降。';
+      const laterExpense = p.laterSpend * Math.pow(1 + inflation, p.wait + p.earlyYears);
+      const perpetualThreshold = post > inflation ? laterExpense * (1 + post) / (post - inflation) : Infinity;
+      const perpetual = covered === p.horizon && p.earlyYears < p.horizon && p.laterSpend > 0 &&
+        trajectory.balanceAtLaterStart + 1e-8 >= perpetualThreshold;
+      const outcome = byId('outcome');
+      outcome.hidden = false;
+      outcome.classList.toggle('short', covered < p.horizon);
+      if (covered < p.horizon) {
+        byId('outcome-title').textContent = (p.retirementAge + covered) + ' 岁起资金不足';
+        byId('outcome-detail').textContent = declineText + '退休第 ' + (covered + 1) + ' 年无法覆盖当年计划支出。';
+      } else if (perpetual) {
+        byId('outcome-title').textContent = '模型内永远花不完';
+        byId('outcome-detail').textContent = declineText + '按固定收益率、通胀和后期支出延续计算，资产可持续覆盖支出。实际收益和支出会变化，这不是保证。';
+      } else if (trajectory.firstDeclineAge !== null) {
+        byId('outcome-title').textContent = trajectory.firstDeclineAge + ' 岁资产开始下降';
+        byId('outcome-detail').textContent = declineText + '到 ' + p.endAge + ' 岁仍可覆盖计划支出，年末余额约 ' + format(trajectory.endingBalance) + '。';
+      } else {
+        byId('outcome-title').textContent = '到 ' + p.endAge + ' 岁资产尚未下降';
+        byId('outcome-detail').textContent = '规划期内每年年末余额都不低于年初余额；这还不能证明更远的年龄也能覆盖支出。';
+      }
     }
     for (const input of [...Object.values(inputs), ...Object.values(spendingInputs).flat()]) input.addEventListener('input', update);
     update();
