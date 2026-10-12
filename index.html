@@ -114,9 +114,9 @@
           <h2 id="inputs-title">填写你的情况</h2>
           <div class="fields">
             <label><span>目前可用资产 · 万元</span><input name="assets" type="number" inputmode="decimal" min="0" step="any" placeholder="填可支取的金融资产"></label>
-            <label><span>计划每年可存（两人合计）· 万元</span><input name="saving" type="number" inputmode="decimal" min="0" step="any" placeholder="填税后实际存下的金额"></label>
-            <label><span>男方当前年龄 · 岁</span><input name="currentAge" type="number" inputmode="numeric" min="0" max="90" step="1" placeholder="例如 29"></label>
-            <label><span>希望两人完全退休时男方年龄 · 岁</span><input name="retirementAge" type="number" inputmode="numeric" min="0" max="90" step="1" placeholder="例如 35"></label>
+            <label><span>计划每年可存 · 万元</span><input name="saving" type="number" inputmode="decimal" min="0" step="any" placeholder="填税后实际存下的金额"></label>
+            <label><span>当前年龄 · 岁</span><input name="currentAge" type="number" inputmode="numeric" min="0" max="90" step="1" placeholder="例如 29"></label>
+            <label><span>希望完全退休 · 岁</span><input name="retirementAge" type="number" inputmode="numeric" min="0" max="90" step="1" placeholder="例如 35"></label>
           </div>
           <h3>退休后每年支出</h3>
           <div class="fields">
@@ -138,15 +138,12 @@
           <p class="hint">住房、医保、旅行和更换家电等费用都要计入。不能提前取出的养老金暂不放进可用资产。</p>
           <section class="pension-module" aria-labelledby="pension-title">
             <h3 id="pension-title">养老金（选填）</h3>
-            <p class="hint">男、女方分别填写预计每年税后到账金额和各自起领年龄。女方当前年龄用于对齐同一年；未填的养老金按 0 计算。</p>
+            <p class="hint">填写预计每年税后到账金额和开始领取年龄；不领养老金可留空，按 0 计算。</p>
             <div class="fields">
-              <label><span>男方每年养老金 · 万元</span><input name="malePensionAnnual" type="number" inputmode="decimal" min="0" step="any" placeholder="选填"></label>
-              <label><span>男方开始领取 · 岁</span><input name="malePensionStartAge" type="number" inputmode="numeric" min="0" max="90" step="1" placeholder="例如 60"></label>
-              <label><span>女方当前年龄 · 岁</span><input name="femaleCurrentAge" type="number" inputmode="numeric" min="0" max="90" step="1" placeholder="填女方现在的年龄"></label>
-              <label><span>女方每年养老金 · 万元</span><input name="femalePensionAnnual" type="number" inputmode="decimal" min="0" step="any" placeholder="选填"></label>
-              <label><span>女方开始领取 · 岁</span><input name="femalePensionStartAge" type="number" inputmode="numeric" min="0" max="90" step="1" placeholder="按女方年龄"></label>
+              <label><span>每年养老金 · 万元</span><input name="pensionAnnual" type="number" inputmode="decimal" min="0" step="any" placeholder="选填"></label>
+              <label><span>开始领取 · 岁</span><input name="pensionStartAge" type="number" inputmode="numeric" min="0" max="90" step="1" placeholder="例如 60"></label>
             </div>
-            <p class="hint">填写哪一方的养老金，就要填写该方的起领年龄；填女方养老金时还要填女方当前年龄。两人按同一日历年份计算，金额按固定数额延续。</p>
+            <p class="hint">填写养老金金额时，也要填写开始领取年龄。金额按固定数额延续。</p>
           </section>
           <div class="fields extra-income">
             <label><span>退休后额外收入 · 万元/年</span><input name="extraIncome" type="number" inputmode="decimal" min="0" step="any" placeholder="选填，税后固定金额"></label>
@@ -187,7 +184,7 @@
         <p>这是按固定收益和固定通胀计算的情景，不是成功概率或收益保证。实际市场每年会波动，退休初期亏损可能让资金更早不足。</p>
         <details>
           <summary>计算口径</summary>
-          <p>储蓄在退休前每年年末存入。退休支出在每年年初支付，并按通胀逐年上调。男方与女方养老金分别从各自填写的年龄开始计入，额外收入从两人完全退休当年开始计入；这些收入按税后固定名义金额、不随通胀增长。所需资产按每年收支折算，确保规划期内不会先用尽，再加另留的备用金。</p>
+          <p>储蓄在退休前每年年末存入。退休支出在每年年初支付，并按通胀逐年上调。养老金从填写的领取年龄开始计入，额外收入从完全退休当年开始计入；这些收入按税后固定名义金额、不随通胀增长。所需资产按每年收支折算，确保规划期内不会先用尽，再加另留的备用金。</p>
           <p>本页没有自动估算养老金待遇，也没有计入税制变化和突发医疗支出。养老金若一次性领取，请不要同时填进可用资产和年度养老金。逐年表最多列到 90 岁；90 岁后仍需生活时，要单独估算那段支出。</p>
         </details>
       </div>
@@ -205,8 +202,8 @@
   </div>
   <script>
   (() => {
-    const names = ['assets','saving','currentAge','retirementAge','earlyYears','malePensionAnnual','malePensionStartAge','femaleCurrentAge','femalePensionAnnual','femalePensionStartAge','preReturn','postReturn','inflation','extraIncome','endAge','reserve'];
-    const optionalNames = ['malePensionAnnual','malePensionStartAge','femaleCurrentAge','femalePensionAnnual','femalePensionStartAge','extraIncome'];
+    const names = ['assets','saving','currentAge','retirementAge','earlyYears','pensionAnnual','pensionStartAge','preReturn','postReturn','inflation','extraIncome','endAge','reserve'];
+    const optionalNames = ['pensionAnnual','pensionStartAge','extraIncome'];
     const inputs = Object.fromEntries(names.map(name => [name, document.querySelector('[name="' + name + '"]')]));
     const spendingInputs = {
       early: [...document.querySelectorAll('[data-phase="early"]')],
@@ -216,8 +213,7 @@
     const formatNumber = value => new Intl.NumberFormat('zh-CN', {maximumFractionDigits: 1, minimumFractionDigits: 1}).format(Math.abs(value) < 1e-8 ? 0 : value);
     const format = value => formatNumber(value) + ' 万元';
     const retirementIncome = (p, yearsFromNow) => p.extraIncome
-      + (p.malePensionAnnual > 0 && p.currentAge + yearsFromNow >= p.malePensionStartAge ? p.malePensionAnnual : 0)
-      + (p.femalePensionAnnual > 0 && p.femaleCurrentAge + yearsFromNow >= p.femalePensionStartAge ? p.femalePensionAnnual : 0);
+      + (p.pensionAnnual > 0 && p.currentAge + yearsFromNow >= p.pensionStartAge ? p.pensionAnnual : 0);
     function emptyTable() {
       const row = document.createElement('tr');
       const cell = document.createElement('td');
@@ -320,9 +316,8 @@
       p.earlySpend = spending.early;
       p.laterSpend = spending.later;
       if (names.some(name => !Number.isFinite(p[name]) || (inputs[name].value !== '' && !inputs[name].checkValidity())) || Object.values(spendingInputs).flat().some(field => field.value !== '' && !field.checkValidity()) || p.wait < 0 || p.horizon < 1 || p.earlyYears > p.horizon ||
-          (p.malePensionAnnual > 0 && inputs.malePensionStartAge.value === '') ||
-          (p.femalePensionAnnual > 0 && (inputs.femaleCurrentAge.value === '' || inputs.femalePensionStartAge.value === ''))) {
-        clear('请填写有效数值。填写养老金金额时，需要补齐对应的起领年龄；女方养老金还需填写女方当前年龄。男方目标退休年龄不能小于当前年龄，规划终点不能早于目标退休年龄。', true);
+          (p.pensionAnnual > 0 && inputs.pensionStartAge.value === '')) {
+        clear('请填写有效数值。填写养老金金额时，需要填写开始领取年龄；目标退休年龄不能小于当前年龄，规划终点不能早于目标退休年龄。', true);
         return;
       }
       byId('error').hidden = true;
@@ -378,8 +373,7 @@
       const laterExpense = p.laterSpend * Math.pow(1 + inflation, p.wait + p.earlyYears);
       const laterYear = p.wait + p.earlyYears;
       const steadyIncome = p.extraIncome
-        + (p.malePensionAnnual > 0 && p.currentAge + laterYear >= p.malePensionStartAge ? p.malePensionAnnual : 0)
-        + (p.femalePensionAnnual > 0 && p.femaleCurrentAge + laterYear >= p.femalePensionStartAge ? p.femalePensionAnnual : 0);
+        + (p.pensionAnnual > 0 && p.currentAge + laterYear >= p.pensionStartAge ? p.pensionAnnual : 0);
       const perpetualThreshold = post > 0 && inflation >= 0 && post > inflation
         ? Math.max(0, laterExpense * (1 + post) / (post - inflation) - steadyIncome * (1 + post) / post)
         : Infinity;
