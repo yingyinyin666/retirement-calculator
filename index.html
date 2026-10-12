@@ -18,6 +18,7 @@
       --accent: light-dark(#315bc0, #a9bcff);
       --soft: light-dark(#eaf0fd, #273453);
       --bad: light-dark(#aa362f, #ffaaa3);
+      --bad-soft: light-dark(rgba(170, 54, 47, .1), rgba(255, 170, 163, .1));
       font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
     }
     * { box-sizing: border-box; }
@@ -92,7 +93,7 @@
     .annual-table tbody td { font-size: 14px; }
     .annual-table td small { display: block; color: var(--muted); font-size: 11px; font-weight: 400; }
     .annual-table td small.shortfall { color: var(--bad); font-weight: 700; }
-    .annual-table tr.decline-start { background: color-mix(in srgb, var(--bad) 10%, transparent); }
+    .annual-table tr.decline-start { background: var(--bad-soft); }
     .annual-table tr.decline-start td:first-child, .annual-table tr.decline-start td:last-child, .annual-table tr.decline-start td small.decline-note { color: var(--bad); font-weight: 700; }
     @media (max-width: 760px) {
       .layout { grid-template-columns: 1fr; }
