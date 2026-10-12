@@ -31,7 +31,6 @@
     h2 { margin: 0 0 18px; font-size: 20px; }
     h3 { margin: 26px 0 6px; font-size: 17px; }
     p { margin: 0; }
-    .intro { max-width: 720px; margin-bottom: 26px; color: var(--muted); }
     .layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(310px, .9fr); gap: 20px; align-items: start; }
     .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 24px; }
     .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 14px; }
@@ -67,6 +66,7 @@
     .metric .name { color: var(--muted); font-size: 13px; }
     .metric output { display: block; margin-top: 4px; font-size: clamp(20px, 3vw, 25px); font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
     .metric .smaller { font-size: 18px; }
+    .metric .detail { margin-top: 6px; color: var(--muted); font-size: 12px; }
     .progress { height: 10px; border-radius: 20px; background: var(--soft); margin-top: 22px; overflow: hidden; }
     .progress > span { display: block; width: 0; height: 100%; background: var(--accent); border-radius: inherit; }
     .status { margin-top: 12px; font-size: 14px; color: var(--muted); }
@@ -109,13 +109,12 @@
     </header>
     <main>
       <h1>牛马赎身计算器</h1>
-      <p class="intro">填写两人合计的资产、储蓄和退休支出。支出按今天的购买力填写，结果会随输入立即更新。养老金和退休后额外收入可选填。</p>
       <div class="layout">
         <section class="panel" aria-labelledby="inputs-title">
           <h2 id="inputs-title">填写你的情况</h2>
           <div class="fields">
             <label><span>目前可用资产 · 万元</span><input name="assets" type="number" inputmode="decimal" min="0" step="any" placeholder="填可支取的金融资产"></label>
-            <label><span>现在每年可存 · 万元</span><input name="saving" type="number" inputmode="decimal" min="0" step="any" placeholder="填税后实际存下的金额"></label>
+            <label><span>计划每年可存（两人合计）· 万元</span><input name="saving" type="number" inputmode="decimal" min="0" step="any" placeholder="填税后实际存下的金额"></label>
             <label><span>男方当前年龄 · 岁</span><input name="currentAge" type="number" inputmode="numeric" min="0" max="90" step="1" placeholder="例如 29"></label>
             <label><span>希望两人完全退休时男方年龄 · 岁</span><input name="retirementAge" type="number" inputmode="numeric" min="0" max="90" step="1" placeholder="例如 35"></label>
           </div>
@@ -123,7 +122,7 @@
           <div class="fields">
             <label><span>前期持续 · 年</span><input name="earlyYears" type="number" inputmode="numeric" min="0" max="80" step="1" value="10"></label>
           </div>
-          <p class="hint">单位：万元，按今天的购买力填写。前期和之后各填一列；不想细分可把总额填在“其他开销”。</p>
+          <p class="hint">单位：万元。前期和之后各填一列；不想细分可把总额填在“其他开销”。</p>
           <table class="expense-table">
             <thead><tr><th scope="col">分项</th><th scope="col">前期</th><th scope="col">之后</th></tr></thead>
             <tbody>
@@ -155,6 +154,7 @@
           <p class="hint">如租金等，从退休当年起每年计入，默认金额固定且持续到账。不要把养老金重复填在这里。</p>
           <details>
             <summary>收益、通胀与规划年限</summary>
+            <p class="hint">上方退休支出按今天的购买力填写；计算时会按这里的年通胀率换算成未来各年的实际支出金额。</p>
             <div class="fields">
               <label><span>退休前税费后年收益 · %</span><input name="preReturn" type="number" inputmode="decimal" min="-50" max="25" step="any" value="3"></label>
               <label><span>退休后税费后年收益 · %</span><input name="postReturn" type="number" inputmode="decimal" min="-50" max="25" step="any" value="3"></label>
@@ -172,7 +172,7 @@
             <div class="metric"><div class="name">退休时预计资产</div><output id="projected">—</output></div>
             <div class="metric"><div class="name">扣除退休收入后所需资产</div><output id="needed">—</output></div>
             <div class="metric"><div class="name" id="gap-label">资金缺口</div><output id="gap">—</output></div>
-            <div class="metric"><div class="name">现在起每年需存</div><output id="required" class="smaller">—</output></div>
+            <div class="metric"><div class="name">达到目标每年至少需存</div><output id="required" class="smaller">—</output><p id="saving-comparison" class="detail"></p></div>
             <div class="metric"><div class="name">当前路径可覆盖退休后</div><output id="covered" class="smaller">—</output></div>
             <div class="metric"><div class="name">退休首年预计支出</div><output id="first-spend" class="smaller">—</output></div>
             <div class="metric"><div class="name">退休首年预计收入</div><output id="first-income" class="smaller">—</output></div>
@@ -289,6 +289,7 @@
     }
     function clear(message, isError) {
       for (const id of ['projected','needed','gap','required','covered','first-spend','first-income']) byId(id).textContent = '—';
+      byId('saving-comparison').textContent = '';
       byId('result-summary').textContent = message;
       byId('outcome').hidden = true;
       byId('outcome').classList.remove('short');
@@ -358,6 +359,9 @@
       byId('gap-label').textContent = difference > 0 ? '资金缺口' : '超过目标';
       byId('gap').textContent = format(Math.abs(difference));
       byId('required').textContent = requiredSaving === null ? '已到退休时点' : format(requiredSaving) + '/年';
+      byId('saving-comparison').textContent = requiredSaving === null ? '目标退休年龄是当前年龄，已没有退休前储蓄年份。'
+        : Math.abs(p.saving - requiredSaving) < 1e-8 ? '与你填写的计划每年储蓄额相同。'
+        : '比你计划每年存的 ' + format(p.saving) + (p.saving > requiredSaving ? '少 ' : '多 ') + format(Math.abs(p.saving - requiredSaving)) + '。';
       byId('covered').textContent = covered === p.horizon ? '至少 ' + p.horizon + ' 年' : covered === 0 ? '不足 1 年' : '约 ' + covered + ' 年';
       byId('first-spend').textContent = format((p.earlyYears > 0 ? p.earlySpend : p.laterSpend) * Math.pow(1 + inflation, p.wait));
       byId('first-income').textContent = format(retirementIncome(p, p.wait));
